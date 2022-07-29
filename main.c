@@ -16,8 +16,10 @@ typedef struct {
   int demora_max_productor;
   int demora_min_consumidor;
   int demora_max_consumidor;
+  int cantidad_productos;
   sem_t puede_producir;
   sem_t puede_consumir;
+  sem_t espera;
 } datos_compartidos_t;
 
 void* produce(void* data);
@@ -47,10 +49,12 @@ int main(int argc, char* argv[]) {
 
   datos_compartidos.capacidad_almacen=random_entre(5,15);
   datos_compartidos.rondas=random_entre(0,10);
+  datos_compartidos.cantidad_productos = random_entre(1,20);
 
   datos_compartidos.almacen = (float*) calloc(datos_compartidos.capacidad_almacen, sizeof(float));
   sem_init(&datos_compartidos.puede_producir, 0, datos_compartidos.capacidad_almacen);
   sem_init(&datos_compartidos.puede_consumir, 0, 0);
+  sem_init(&datos_compartidos.espera,0,datos_compartidos.cantidad_productos);
 
   clock_gettime(CLOCK_MONOTONIC, &tiempo_ini);
 
@@ -64,7 +68,6 @@ int main(int argc, char* argv[]) {
   } else {
     fprintf(stderr, "error: no puede crear productor\n");
     error = 1;
-  }
   if (error == 0) {
     pthread_join(productor, NULL);
     pthread_join(consumidor, NULL);
@@ -78,6 +81,8 @@ int main(int argc, char* argv[]) {
 
   sem_destroy(&datos_compartidos.puede_consumir);
   sem_destroy(&datos_compartidos.puede_producir);
+  sem_destroy(&datos_compartidos.espera);
+
   free(datos_compartidos.almacen);
 
   return EXIT_SUCCESS;
