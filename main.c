@@ -1,3 +1,18 @@
+/*######################### Descripción del proyecto: #########################
+#   Programa en C que simula una caja registradora.
+#   Descripción:
+#    - Se creará un programa que simule una caja registradora que va consumiendo productos.
+#    - Código desarrollado mediante metodología de programación modular, con el objetivo de reutilizar bibliotecas de funciones y/o métodos.
+#
+#   Autores:
+#       - Aracely Peréz (https://github.com/AracelyPerez)
+#       - Nicolás Aburto (https://github.com/NicolasAburto)
+#
+#   Licencia:
+#       - Julio 2022. Apache 2.0.
+#
+###########################################################################################################*/
+
 /* Programa de ejemplo de semaphore. */
 /* para compilar usar: gcc -o tarea3_ejemplo tarea3_ejemplo.c -lpthread */
 
