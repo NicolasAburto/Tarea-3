@@ -1,4 +1,4 @@
-Tarea 3 - Sistemas Operativos
+# Tarea 3 - Sistemas Operativos
 
 Programa desarrollado en C, junto al uso de módulos e interfaz gráfica.
 
