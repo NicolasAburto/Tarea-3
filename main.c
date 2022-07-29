@@ -9,13 +9,13 @@
 
 
 typedef struct {
-  int capacidad_almacen;
+  int cinta;
   float* almacen;
   int rondas;
-  int demora_min_productor;
-  int demora_max_productor;
-  int demora_min_consumidor;
-  int demora_max_consumidor;
+  int demora_min_cliente;
+  int demora_max_cliente;
+  int demora_min_caja;
+  int demora_max_caja;
   int cantidad_productos;
   sem_t puede_producir;
   sem_t puede_consumir;
@@ -36,25 +36,28 @@ int main(int argc, char* argv[]) {
   srandom(time(NULL));
 
   if (argc == 5) {
-    //datos_compartidos.capacidad_almacen=atoi(argv[1]);
-    //datos_compartidos.rondas=atoi(argv[2]);
-    datos_compartidos.demora_min_productor=atoi(argv[1]);
-    datos_compartidos.demora_max_productor=atoi(argv[2]);
-    datos_compartidos.demora_min_consumidor=atoi(argv[3]);
-    datos_compartidos.demora_max_consumidor=atoi(argv[4]);
+    datos_compartidos.demora_min_cliente=atoi(argv[1]);
+    datos_compartidos.demora_max_cliente=atoi(argv[2]);
+    datos_compartidos.demora_min_caja=atoi(argv[3]);
+    datos_compartidos.demora_max_caja=atoi(argv[4]);
   } else {
-    printf("Usar: %s demora_min_productor demora_max_productor demora_min_consumidor demora_max_consumidor\n", argv[0]);
+    printf("Usar: %s demora_min_cliente demora_max_cliente demora_min_caja demora_max_caja\n", argv[0]);
     exit(EXIT_FAILURE);
   }
-
-  datos_compartidos.capacidad_almacen=random_entre(5,15);
-  datos_compartidos.rondas=random_entre(1,10);
+  
+  datos_compartidos.cinta = random_entre(5,15);
+  datos_compartidos.rondas = random_entre(1,10);
   datos_compartidos.cantidad_productos = random_entre(1,20);
 
-  datos_compartidos.almacen = (float*) calloc(datos_compartidos.capacidad_almacen, sizeof(float));
-  sem_init(&datos_compartidos.puede_producir, 0, datos_compartidos.capacidad_almacen);
+  printf("ronda: %i\n",datos_compartidos.rondas);
+  printf("capacidad_almacen: %i\n",datos_compartidos.cinta);
+  printf("cantidad_productos: %i\n",datos_compartidos.cantidad_productos);
+
+  datos_compartidos.almacen = (float*) calloc(datos_compartidos.cinta, sizeof(float));
+  sem_init(&datos_compartidos.puede_producir, 0, datos_compartidos.cinta);
   sem_init(&datos_compartidos.puede_consumir, 0, 0);
   sem_init(&datos_compartidos.espera,0,datos_compartidos.cantidad_productos);
+ 
 
   clock_gettime(CLOCK_MONOTONIC, &tiempo_ini);
 
@@ -76,14 +79,13 @@ int main(int argc, char* argv[]) {
 
   clock_gettime(CLOCK_MONOTONIC, &tiempo_fin);
 
-  float periodo = (tiempo_fin.tv_sec - tiempo_ini.tv_sec) +
+  float periodo = (tiempo_fin.tv_sec - tiempo_ini.tv_sec) + 
           (tiempo_fin.tv_nsec - tiempo_ini.tv_nsec) * 1e-9;
   printf("Tiempo de ejecución: %.9lfs\n", periodo);
 
   sem_destroy(&datos_compartidos.puede_consumir);
   sem_destroy(&datos_compartidos.puede_producir);
   sem_destroy(&datos_compartidos.espera);
-
   free(datos_compartidos.almacen);
 
   return EXIT_SUCCESS;
@@ -94,32 +96,37 @@ void* produce(void* data) {
   int contador = 0;
   for (int ronda = 0; ronda < datos_compartidos->rondas; ++ronda) {
     printf("INICIO RONDA P: %i\n", ronda);
-    for (int indice = 0; indice < datos_compartidos->capacidad_almacen; ++indice) {
+    for (int indice = 0; indice < datos_compartidos->cantidad_productos; ++indice) {
       sem_wait(&datos_compartidos->puede_producir);
-      usleep(1000 * random_entre(datos_compartidos->demora_min_productor, datos_compartidos->demora_max_productor));
+      usleep(1000 * random_entre(datos_compartidos->demora_min_cliente, datos_compartidos->demora_max_cliente));
       datos_compartidos->almacen[indice] = ++contador;
       printf("Indice almacen %i se produce %lg\n", indice, datos_compartidos->almacen[indice]);
       sem_post(&datos_compartidos->puede_consumir);
     }
+    sem_wait(&datos_compartidos->espera);
   }
   return NULL;
 }
+
 
 void* consume(void* data) {
   datos_compartidos_t* datos_compartidos = (datos_compartidos_t*)data;
   for (int ronda = 0; ronda < datos_compartidos->rondas; ++ronda) {
     printf("\t\tINICIO RONDA C: %i\n", ronda);
-    for (int indice = 0; indice < datos_compartidos->capacidad_almacen; ++indice) {
+    for (int indice = 0; indice < datos_compartidos->cantidad_productos; ++indice) {
       sem_wait(&datos_compartidos->puede_consumir);
       float value = datos_compartidos->almacen[indice];
-      usleep(1000 * random_entre(datos_compartidos->demora_min_consumidor
-        , datos_compartidos->demora_max_consumidor));
+      usleep(1000 * random_entre(datos_compartidos->demora_min_caja
+        , datos_compartidos->demora_max_caja));
       printf("\t\tIndice almacen %i se consume %lg\n", indice, value);
       sem_post(&datos_compartidos->puede_producir);
+      }
     }
-  }
-  return NULL;
+  sem_post(&datos_compartidos->espera);
+return NULL;
 }
+
+
 
 int random_entre(int min, int max) {
   int aux=0;
